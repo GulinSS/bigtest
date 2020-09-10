@@ -6,6 +6,7 @@ import { watch, RollupWatchOptions, RollupWatcherEvent, RollupWatcher } from 'ro
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import injectProcessEnv from 'rollup-plugin-inject-process-env';
+import { eslintPlugin } from './plugins/eslint/eslint-plugin';
 // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
 // @ts-ignore
 import babel from '@rollup/plugin-babel';
@@ -15,13 +16,23 @@ interface BundleOptions {
   entry: string;
   outFile: string;
   globalName?: string;
+  testFiles: string[];
 };
 
 interface BundlerOptions {
   mainFields: Array<"browser" | "main" | "module">;
+  testFiles: string[];
 };
 
-function prepareRollupOptions(bundle: BundleOptions, channel: Channel<BundlerMessage>, { mainFields }: BundlerOptions = { mainFields: ["browser", "module", "main"] }): RollupWatchOptions {
+const DefaultBundlerOptions: BundlerOptions = {
+  mainFields: ["browser", "module", "main"],
+  testFiles: []
+};
+
+function prepareRollupOptions(
+  bundle: BundleOptions,
+  channel: Channel<BundlerMessage>,
+  { mainFields, testFiles }: BundlerOptions = DefaultBundlerOptions): RollupWatchOptions {
   return {
     input: bundle.entry,
     output: {
@@ -43,6 +54,7 @@ function prepareRollupOptions(bundle: BundleOptions, channel: Channel<BundlerMes
         extensions: ['.js', '.ts']
       }),
       commonjs(),
+      eslintPlugin({ testFiles  }),
       babel({
         babelHelpers: 'runtime',
         extensions: ['.js', '.ts'],

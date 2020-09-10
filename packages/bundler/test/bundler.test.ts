@@ -20,12 +20,13 @@ describe("Bundler", function() {
   describe("JavaScript support", () => {
     describe('success', () => {
       beforeEach(async () => {
-        await fs.writeFile("./build/test/sources/input.js", "const foo = 'bar';\nexport default foo;\n");
+        await fs.writeFile("./build/test/sources/input.js", "const foo = { description: 'hello' };\nexport default foo;\n");
 
         bundler = await spawn(Bundler.create({
           entry: "./build/test/sources/input.js",
           outFile: "./build/test/output/manifest.js",
           globalName: "__bigtestManifest",
+          testFiles: []
         }));
         
         await spawn(subscribe(bundler).match({ type: 'UPDATE' }).first());
@@ -55,6 +56,7 @@ describe("Bundler", function() {
           entry: "./build/test/sources/input.js",
           outFile: "./build/test/output/manifest.js",
           globalName: "__bigtestManifest",
+          testFiles: []
         }));
       });
 
@@ -88,6 +90,7 @@ describe("Bundler", function() {
           entry: "./build/test/sources/input.ts",
           outFile: "./build/test/output/manifest.js",
           globalName: "__bigtestManifest",
+          testFiles: []
         }));
         
         await spawn(subscribe(bundler).match({ type: 'UPDATE' }).first());
@@ -106,6 +109,7 @@ describe("Bundler", function() {
           entry: "./build/test/sources/input.ts",
           outFile: "./build/test/output/manifest.js",
           globalName: "__bigtestManifest",
+          testFiles: []
         }));
       });
 
@@ -124,7 +128,8 @@ describe("Bundler", function() {
       bundler = await spawn(Bundler.create({
         entry: "./build/test/sources/input.ts",
         outFile: "./build/test/output/manifest.js",
-        globalName: "__bigtestManifest"
+        globalName: "__bigtestManifest",
+        testFiles: []
       }));
       
       await fs.writeFile("./build/test/sources/input.ts", "export default {hello: 'world'}\n");

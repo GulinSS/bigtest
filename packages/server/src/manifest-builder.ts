@@ -9,13 +9,14 @@ import { createFingerprint } from 'fprint';
 import * as path from 'path';
 import * as fs from 'fs';
 import { OrchestratorState } from './orchestrator/state';
-import { assertBundlerState, assertCanTransition } from '../src/assertions/bundler-assertions';
+import { assertBundlerState, assertCanTransition } from '@bigtest/bundler';
 
 
 const { copyFile, mkdir, stat, appendFile, open } = fs.promises;
 
 interface ManifestBuilderOptions {
   atom: Atom<OrchestratorState>;
+  testFiles: string[];
   srcPath: string;
   buildDir: string;
   distDir: string;
@@ -93,7 +94,8 @@ export function* createManifestBuilder(options: ManifestBuilderOptions): Operati
   let bundler: Bundler = yield Bundler.create({
     entry: options.srcPath,
     globalName: bigtestGlobals.manifestProperty,
-    outFile: path.join(options.buildDir, "manifest.js")
+    outFile: path.join(options.buildDir, "manifest.js"),
+    testFiles: options.testFiles
   });
 
   yield subscribe(bundler).forEach(function* (message) {

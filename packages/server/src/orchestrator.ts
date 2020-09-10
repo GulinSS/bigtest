@@ -98,6 +98,7 @@ export function* createOrchestrator(options: OrchestratorOptions): Operation {
     srcPath: manifestSrcPath,
     distDir: manifestDistDir,
     buildDir: manifestBuildDir,
+    testFiles: options.project.testFiles
   }));
 
   yield function* () {
