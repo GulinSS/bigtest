@@ -1,6 +1,6 @@
 import { Operation, resource } from 'effection';
 import { on } from '@effection/events';
-import { Subscribable, SymbolSubscribable } from '@effection/subscription';
+import { subscribe, Subscribable, SymbolSubscribable, ChainableSubscription } from '@effection/subscription';
 import { Channel } from '@effection/channel';
 import { watch, RollupWatchOptions, RollupWatcherEvent, RollupWatcher } from 'rollup';
 import resolve from '@rollup/plugin-node-resolve';
@@ -21,18 +21,9 @@ interface BundleOptions {
 
 interface BundlerOptions {
   mainFields: Array<"browser" | "main" | "module">;
-  testFiles: string[];
 };
 
-const DefaultBundlerOptions: BundlerOptions = {
-  mainFields: ["browser", "module", "main"],
-  testFiles: []
-};
-
-function prepareRollupOptions(
-  bundle: BundleOptions,
-  channel: Channel<BundlerMessage>,
-  { mainFields, testFiles }: BundlerOptions = DefaultBundlerOptions): RollupWatchOptions {
+function prepareRollupOptions(bundle: BundleOptions, channel: Channel<BundlerMessage>, { mainFields }: BundlerOptions = { mainFields: ["browser", "module", "main"] }): RollupWatchOptions {
   return {
     input: bundle.entry,
     output: {
@@ -54,7 +45,7 @@ function prepareRollupOptions(
         extensions: ['.js', '.ts']
       }),
       commonjs(),
-      eslintPlugin({ testFiles  }),
+      eslintPlugin({ testFiles: bundle.testFiles  }),
       babel({
         babelHelpers: 'runtime',
         extensions: ['.js', '.ts'],
@@ -78,8 +69,10 @@ export class Bundler implements Subscribable<BundlerMessage, undefined> {
       let rollup: RollupWatcher = watch(prepareRollupOptions(bundle, bundler.channel));
 
       try {
-        let messages = on(rollup, 'event')
-          .map(([event]) => event as RollupWatcherEvent)
+        let events: ChainableSubscription<RollupWatcherEvent[], BundlerMessage> = yield subscribe(on(rollup, 'event'));
+   
+        let messages = events
+          .map(([event]) => event)
           .filter(event => ['START', 'END', 'ERROR'].includes(event.code))
           .map(event => {
             switch (event.code) {
