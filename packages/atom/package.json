@@ -21,16 +21,16 @@
     "@frontside/tsconfig": "*",
     "@types/mocha": "^7.0.1",
     "@types/node": "^13.13.4",
-    "@types/ramda": "types/npm-ramda#dist",
     "expect": "^24.9.0",
     "mocha": "^6.2.2",
     "ts-node": "*"
   },
   "dependencies": {
-    "effection": "0.7.0",
     "@effection/events": "^0.7.4",
     "@effection/subscription": "^0.7.2",
-    "ramda": "0.27.0"
+    "effection": "0.7.0",
+    "fp-ts": "^2.8.2",
+    "monocle-ts": "^2.3.3"
   },
   "volta": {
     "node": "12.16.0",

@@ -1,14 +1,26 @@
 import { Operation } from "effection";
-import { lensPath, view, set, dissoc, over } from "ramda";
+import { Lens } from "monocle-ts";
 import { Atom } from "./atom";
 import { Subscribable, SymbolSubscribable, Subscription } from '@effection/subscription';
 
+function deleteObjKey<T>(prop: keyof T, v: T): T {
+  let copy = {
+    ...v
+  }
+
+  delete copy[prop]
+
+  return copy
+}
+
 export class Slice<T, S> implements Subscribable<T, void> {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  lens: any;
+  lens: Lens<S, T>;
 
-  constructor(private atom: Atom<S>, public path: Array<string | number>) {
-    this.lens = lensPath(path);
+  constructor(private atom: Atom<S>, public path: ReadonlyArray<string | number>) {
+    // TODO: it was not typesafe, it will not be typesafe
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.lens = Lens.fromPath<S>()(path as any) as any;
   }
 
   get state() {
@@ -16,12 +28,12 @@ export class Slice<T, S> implements Subscribable<T, void> {
   }
 
   get(): T {
-    return (view(this.lens)(this.state) as unknown) as T;
+    return this.lens.get(this.state)
   }
 
   set(value: T): void {
     this.atom.update((state) => {
-      return (set(this.lens, value, state) as unknown) as S;
+      return this.lens.set(value)(state);
     });
   }
 
@@ -30,10 +42,10 @@ export class Slice<T, S> implements Subscribable<T, void> {
   }
 
   over(fn: (value: T) => T): void {
-    this.atom.update((state) => (over(this.lens, fn, state) as unknown) as S);
+    this.atom.update((state) => this.lens.set(fn(this.lens.get(state)))(state));
   }
 
-  slice<T>(path: Array<string | number>): Slice<T, S> {
+  slice<T>(path: ReadonlyArray<string>): Slice<T, S> {
     return new Slice(this.atom, this.path.concat(path));
   }
 
@@ -44,30 +56,24 @@ export class Slice<T, S> implements Subscribable<T, void> {
     }
 
     let parentPath = this.path.slice(0, -1);
-    let parentLens = lensPath(parentPath);
-    let parent = view(parentLens, this.state);
+    // TODO: it was not typesafe, it will not be typesafe
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let parentLens: Lens<S, any> = Lens.fromPath<S>()(parentPath as any) as any;
+    let parent = parentLens.get(this.state);
     if (Array.isArray(parent)) {
       this.atom.update((state) => {
         let array = parent as unknown[];
-        return (set(
-          parentLens,
-          array.filter((el) => el !== this.get()),
-          state
-        ) as unknown) as S;
+        return parentLens.set(array.filter((el) => el !== this.get()))(state);
       });
     } else {
       let [property] = this.path.slice(-1);
       this.atom.update((state) => {
-        return (set(
-          parentLens,
-          dissoc(property, parent as object),
-          state
-        ) as unknown) as S;
+        return parentLens.set(deleteObjKey(parent, property))(state)
       });
     }
   }
 
   [SymbolSubscribable](): Operation<Subscription<T, void>> {
-    return Subscribable.from(this.atom).map((state) => view(this.lens)(state) as unknown as T)[SymbolSubscribable]()
+    return Subscribable.from(this.atom).map((state) => this.lens.get(state) as unknown as T)[SymbolSubscribable]()
   }
 }
