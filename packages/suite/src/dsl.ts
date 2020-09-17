@@ -49,6 +49,13 @@ export class TestBuilder<C extends Context> implements TestImplementation {
     });
   }
 
+  stepList(steps: StepDefinition<C,void>[]): TestBuilder<C> {
+    return new TestBuilder({
+      ...this,
+      steps: this.steps.concat(steps as Step[])
+    });
+  }
+
   assertion(assertion: AssertionDefinition<C>): TestBuilder<C>;
   assertion(description: string, check: Check<C>): TestBuilder<C>;
   assertion(descriptionOrAssertion: string | AssertionDefinition<C>, check?: Check<C>): TestBuilder<C> {

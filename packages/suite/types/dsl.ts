@@ -50,3 +50,16 @@ test('a test')
   // $ExpectError
   .step('consume from context', async({ helloX: string }) => { goodbye: helloX })
   .step({ description: "consume from context", action: async () => {} })
+
+test('with step list')
+  .step('add context', async() => {
+    return { hello: 'world' };
+  })
+  .stepList([{
+    description: 'first',
+    action: async ({ hello }) => {}
+  }, {
+    description: 'second',
+    action: async ({ hello }) => {}
+  }])
+  .step('third', async ({ hello }) => {})
