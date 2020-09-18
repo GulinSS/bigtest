@@ -4959,6 +4959,21 @@ dtslint@^3.5.2:
     tslint "5.14.0"
     yargs "^15.1.0"
 
+dtslint@^4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/dtslint/-/dtslint-4.0.2.tgz#29dd1cb902648fe5f4c3fe39616c43973e602f61"
+  integrity sha512-vWGZI+QSQ4AQAvJ3T0dnHf+fWqrmx4C0SR0h3Jubi5iBDA6Nsu2Ds+AjqxfiRl6py0yvEZU3T+MqNpKV07CI0A==
+  dependencies:
+    "@definitelytyped/header-parser" latest
+    "@definitelytyped/typescript-versions" latest
+    "@definitelytyped/utils" latest
+    dts-critic latest
+    fs-extra "^6.0.1"
+    json-stable-stringify "^1.0.1"
+    strip-json-comments "^2.0.1"
+    tslint "5.14.0"
+    yargs "^15.1.0"
+
 duplexer2@^0.1.4, duplexer2@~0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/duplexer2/-/duplexer2-0.1.4.tgz#8b12dab878c0d69e3e7891051662a32fc6bddcc1"

@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import { Operation } from "effection";
 import { on } from '@effection/events';
 import { Subscribable, SymbolSubscribable } from '@effection/subscription';
-import { Slice } from "./slice";
+import { Slice, SliceFromPath } from "./slice";
 
 export class Atom<S> implements Subscribable<S,void> {
   private readonly initial: S;
@@ -36,8 +36,8 @@ export class Atom<S> implements Subscribable<S,void> {
     this.subscriptions.emit("state", this.state);
   }
 
-  slice<T>(path: string[]): Slice<T, S> {
-    return new Slice(this, path);
+  slice(): SliceFromPath<S> {
+    return Slice.fromPath<S>(this);
   }
 
   each(fn: (state: S) => Operation<void>): Operation<void> {

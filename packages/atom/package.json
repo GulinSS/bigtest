@@ -14,13 +14,15 @@
   "scripts": {
     "lint": "eslint '{src,test}/**/*.ts'",
     "test": "mocha -r ts-node/register test/**/*.test.ts",
-    "prepack": "tsc --outdir dist --declaration --sourcemap"
+    "prepack": "tsc --outdir dist --declaration --sourcemap",
+    "test:types": "dtslint test-dts"
   },
   "devDependencies": {
     "@bigtest/performance": "^0.5.0",
     "@frontside/tsconfig": "*",
     "@types/mocha": "^7.0.1",
     "@types/node": "^13.13.4",
+    "dtslint": "^4.0.2",
     "expect": "^24.9.0",
     "mocha": "^6.2.2",
     "ts-node": "*"

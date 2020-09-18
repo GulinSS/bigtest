@@ -1,26 +1,54 @@
 import { Operation } from "effection";
+import { Option } from "fp-ts/Option";
+import { ReadonlyRecord } from "fp-ts/ReadonlyRecord";
 import { Lens } from "monocle-ts";
-import { Atom } from "./atom";
+import { atReadonlyRecord } from "monocle-ts/lib/At/ReadonlyRecord";
 import { Subscribable, SymbolSubscribable, Subscription } from '@effection/subscription';
 
-function deleteObjKey<T>(prop: keyof T, v: T): T {
-  let copy = {
-    ...v
-  }
+import { Atom } from "./atom";
 
-  delete copy[prop]
-
-  return copy
+export interface SliceFromPath<S> {
+  <
+    K1 extends keyof S,
+    K2 extends keyof S[K1],
+    K3 extends keyof S[K1][K2],
+    K4 extends keyof S[K1][K2][K3],
+    K5 extends keyof S[K1][K2][K3][K4]
+    >(
+    path: [K1, K2, K3, K4, K5]
+  ): Slice<S[K1][K2][K3][K4][K5], S>;
+  <K1 extends keyof S, K2 extends keyof S[K1], K3 extends keyof S[K1][K2], K4 extends keyof S[K1][K2][K3]>(
+    path: [K1, K2, K3, K4]
+  ): Slice<S[K1][K2][K3][K4], S>;
+  <K1 extends keyof S, K2 extends keyof S[K1], K3 extends keyof S[K1][K2]>(path: [K1, K2, K3]): Slice<S[K1][K2][K3], S>;
+  <K1 extends keyof S, K2 extends keyof S[K1]>(path: [K1, K2]): Slice<S[K1][K2], S>;
+  <K1 extends keyof S>(path: [K1]): Slice<S[K1], S>;
 }
 
-export class Slice<T, S> implements Subscribable<T, void> {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  lens: Lens<S, T>;
+// See https://medium.com/dailyjs/typescript-create-a-condition-based-subset-types-9d902cea5b8c
+type FilterFlags<Base, Condition> = {
+  [Key in keyof Base]: Base[Key] extends Condition ? Key : never
+};
 
-  constructor(private atom: Atom<S>, public path: ReadonlyArray<string | number>) {
-    // TODO: it was not typesafe, it will not be typesafe
+type AllowedNames<Base, Condition> =
+  FilterFlags<Base, Condition>[keyof Base];
+
+interface AtRecordSlice<V, T, S> {
+  <P extends AllowedNames<T, ReadonlyRecord<K, V>>, K extends string = string>(key: K, p: P): Slice<Option<V>, S>;
+}
+
+
+export class Slice<T, S> implements Subscribable<T, void> {
+  private constructor(private atom: Atom<S>, private lens: Lens<S, T>) {}
+
+  static fromPath<S>(a: Atom<S>): SliceFromPath<S> {
+    let fromProp = Lens.fromProp<S>()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.lens = Lens.fromPath<S>()(path as any) as any;
+    return (path: Array<any>) => {
+      let lens = fromProp(path[0])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return new Slice(a, path.slice(1).reduce((acc, prop) => acc.compose(fromProp(prop)), lens)) as any
+    }
   }
 
   get state() {
@@ -45,31 +73,19 @@ export class Slice<T, S> implements Subscribable<T, void> {
     this.atom.update((state) => this.lens.set(fn(this.lens.get(state)))(state));
   }
 
-  slice<T>(path: ReadonlyArray<string>): Slice<T, S> {
-    return new Slice(this.atom, this.path.concat(path));
+  slice<P extends keyof T>(p: P): Slice<T[P], S> {
+    return new Slice(this.atom, this.lens.composeLens(Lens.fromProp<T>()(p)));
   }
 
-  remove(): void {
-    // If this is the root, then it cannot be removed.
-    if (this.path.length === 0) {
-      return;
-    }
+  atRecord<V>(): AtRecordSlice<V, T, S> {
+    return (key, p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let lens2: Lens<T, ReadonlyRecord<typeof key, V>> = Lens.fromProp<T>()(p) as any
 
-    let parentPath = this.path.slice(0, -1);
-    // TODO: it was not typesafe, it will not be typesafe
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let parentLens: Lens<S, any> = Lens.fromPath<S>()(parentPath as any) as any;
-    let parent = parentLens.get(this.state);
-    if (Array.isArray(parent)) {
-      this.atom.update((state) => {
-        let array = parent as unknown[];
-        return parentLens.set(array.filter((el) => el !== this.get()))(state);
-      });
-    } else {
-      let [property] = this.path.slice(-1);
-      this.atom.update((state) => {
-        return parentLens.set(deleteObjKey(parent, property))(state)
-      });
+      return new Slice(this.atom, this.lens
+        .composeLens(lens2)
+        .composeLens(atReadonlyRecord<V>().at(key))
+      )
     }
   }
 
